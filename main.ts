@@ -47,6 +47,8 @@ class Production {
 
 class Grammar {
   public Productions: Set<Production>;
+  public Terminals = new Set<Symbol>();
+  public NonTerminals = new Set<Symbol>();
 
   // Data is content of the grammar text file
   constructor(data: string) {
@@ -55,8 +57,46 @@ class Grammar {
       data.split("\n").map((line) => new Production(line))
     );
 
+    this.get_symbols();
     this.eliminate_recursion();
   }
+
+  /**
+   * Get terminal and non-terminal symbols
+   */
+  private get_symbols() {
+    const seen_terminals: Set<string> = new Set();
+    const seen_nonterminals: Set<string> = new Set();
+    let text: string;
+
+    this.Productions.forEach((production) => {
+      // Get non-terminals from headers
+      const header_content: Symbol = production.Header.content;
+      text = header_content.text;
+
+      if (!seen_nonterminals.has(text)) {
+        seen_nonterminals.add(text);
+        this.NonTerminals.add(header_content);
+      }
+
+      // Get terminals from body
+      const body_content: Symbol[] = production.Body.content;
+
+      for (const symbol of body_content) {
+        text = symbol.text;
+
+        if (!seen_terminals.has(text) && symbol.type === "terminal") {
+          seen_terminals.add(text);
+          this.Terminals.add(symbol);
+        }
+      }
+    });
+  }
+
+  /**
+   * Eliminate recursion on the productions
+   */
+  private eliminate_recursion() {}
 
   /**
    * Prints each production.
@@ -66,11 +106,6 @@ class Grammar {
       console.log(production.text());
     });
   }
-
-  /**
-   * Eliminate recursion on the productions
-   */
-  private eliminate_recursion() {}
 }
 
 // -- GRAMMAR INPUT --
@@ -82,6 +117,9 @@ try {
 
   const grammar = new Grammar(data);
   grammar.print();
+
+  console.log(grammar.NonTerminals);
+  console.log(grammar.Terminals);
 } catch (err) {
   console.error("Error reading the file:", err);
 }
