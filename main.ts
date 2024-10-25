@@ -59,7 +59,10 @@ class Grammar {
   constructor(data: string) {
     this.Productions = new Set(
       // Map each line to a new production
-      data.split("\n").map((line) => new Production(line))
+      data
+        .split("\n")
+        .filter((line) => line.trim() !== "")
+        .map((line) => new Production(line))
     );
 
     this.get_symbols();
