@@ -30,9 +30,14 @@ class Production {
     // Add header
     this.Header = { content: new Symbol(parts[0]) };
 
+    // Parse body
+    const body_symbols: Array<string> = parts[1].match(
+      /[A-Z]'*|[^A-Z]+/g
+    ) as Array<string>;
+
     // Add body
     this.Body = {
-      content: Array.from(parts[1], (symbol) => new Symbol(symbol)),
+      content: body_symbols.map((symbol) => new Symbol(symbol)),
     };
   }
 
@@ -94,9 +99,71 @@ class Grammar {
   }
 
   /**
-   * Eliminate recursion on the productions
+   * Eliminate recursion on the productions.
    */
-  private eliminate_recursion() {}
+  private eliminate_recursion() {
+    this.NonTerminals.forEach((non_terminal: Symbol) => {
+      let recursion: boolean = false;
+      const old_productions: Set<Production> = new Set();
+
+      // 1_) Get alpha and beta for A -> Aalpha|beta
+      const alpha: Set<Symbol[]> = new Set();
+      const beta: Set<Symbol[]> = new Set();
+
+      this.Productions.forEach((production: Production) => {
+        if (non_terminal.text === production.Header.content.text) {
+          if (production.Body.content[0].text === non_terminal.text) {
+            // 1_a) alpha
+            alpha.add(production.Body.content.slice(1));
+            // Detect recursion
+            recursion = true;
+          } else {
+            // 1_b) beta
+            beta.add(production.Body.content.slice(0));
+          }
+          // Keep track of old recursive productions
+          old_productions.add(production);
+        }
+      });
+
+      if (!recursion) return;
+
+      // 2_) Delete old productions
+      old_productions.forEach((production: Production) => {
+        this.Productions.delete(production);
+      });
+
+      // 3_) Create new productions!
+      // 3_b) beta
+      if (beta.size === 0) {
+        this.Productions.add(
+          new Production(`${non_terminal.text}->${non_terminal.text}'`)
+        );
+      }
+      beta.forEach((_beta: Symbol[]) => {
+        this.Productions.add(
+          new Production(
+            `${non_terminal.text}->${_beta
+              .map((symbol) => symbol.text)
+              .join("")}${non_terminal.text}'`
+          )
+        );
+      });
+      // 3_a) alpha
+      alpha.forEach((_alpha: Symbol[]) => {
+        this.Productions.add(
+          new Production(
+            `${non_terminal.text}'->${_alpha
+              .map((symbol) => symbol.text)
+              .join("")}${non_terminal.text}'`
+          )
+        );
+      });
+
+      // 4_) Add epsilon production
+      this.Productions.add(new Production(`${non_terminal.text}'->&`));
+    });
+  }
 
   /**
    * Prints each production.
@@ -117,9 +184,6 @@ try {
 
   const grammar = new Grammar(data);
   grammar.print();
-
-  console.log(grammar.NonTerminals);
-  console.log(grammar.Terminals);
 } catch (err) {
   console.error("Error reading the file:", err);
 }
