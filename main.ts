@@ -8,14 +8,14 @@ interface Body {
 
 class Symbol {
   public type: "terminal" | "non-terminal";
-  public content: string;
+  public text: string;
 
-  constructor(content: string) {
+  constructor(text: string) {
     // Detect if it is a terminal symbol
     // NOTE: Ignore ' char in the case of new symbols such as F' or F''
-    this.type = /^[A-Z]'*$/.test(content[0]) ? "non-terminal" : "terminal";
+    this.type = /^[A-Z]'*$/.test(text[0]) ? "non-terminal" : "terminal";
 
-    this.content = content;
+    this.text = text;
   }
 }
 
@@ -36,7 +36,41 @@ class Production {
     };
   }
 
-  public text = () => `${this.Header}->${this.Body.content.join()}`;
+  /**
+   * @returns Production as a string.
+   */
+  public text = () =>
+    `${this.Header.content.text}->${this.Body.content
+      .map((symbol) => symbol.text)
+      .join("")}`;
+}
+
+class Grammar {
+  public Productions: Set<Production>;
+
+  // Data is content of the grammar text file
+  constructor(data: string) {
+    this.Productions = new Set(
+      // Map each line to a new production
+      data.split("\n").map((line) => new Production(line))
+    );
+
+    this.eliminate_recursion();
+  }
+
+  /**
+   * Prints each production.
+   */
+  public print() {
+    this.Productions.forEach((production) => {
+      console.log(production.text());
+    });
+  }
+
+  /**
+   * Eliminate recursion on the productions
+   */
+  private eliminate_recursion() {}
 }
 
 // -- GRAMMAR INPUT --
@@ -45,12 +79,9 @@ const filePath = "test.txt";
 try {
   // Read the file
   const data = await Deno.readTextFile(filePath);
-  const lines = data.split("\n");
 
-  for (const line of lines) {
-    const production = new Production(line);
-    console.log(production);
-  }
+  const grammar = new Grammar(data);
+  grammar.print();
 } catch (err) {
   console.error("Error reading the file:", err);
 }
