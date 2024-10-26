@@ -19,54 +19,61 @@ class Symbol {
   }
 }
 
-class Production {
-  public Header: Header;
-  public Body: Body;
+class Grammar {
+  public Productions: Map<Header, Set<Body>> = new Map();
+  public Terminals: Set<Symbol> = new Set();
+  public NonTerminals: Set<Symbol> = new Set();
 
-  constructor(expression: string) {
+  // Data is content of the grammar text file
+  constructor(data: string) {
+    try {
+      data
+        // Split productions by lines
+        .split("\n")
+        // Filter empty lines
+        .filter((line) => line.trim() !== "")
+        // Add production
+        .map((line) => this.add(line));
+    } catch (_e) {
+      throw new Error("Wrong format on text file.");
+    }
+
+    //this.get_symbols();
+    //this.eliminate_recursion();
+  }
+
+  /**
+   * Add production.
+   * @param expression - String of the form A->aB.
+   */
+  private add(expression: string) {
     // Split header and body
     const parts: string[] = expression.split("->");
+    let production: Set<Body> | null = null;
 
-    // Add header
-    this.Header = { content: new Symbol(parts[0]) };
+    // Get production body if it already exists
+    for (const header of this.Productions.keys()) {
+      if (header.content.text === parts[0]) {
+        production = this.Productions.get(header) as Set<Body>;
+        break;
+      }
+    }
+
+    // If there is no production on that header, create it
+    if (production === null) {
+      production = new Set<Body>();
+      this.Productions.set({ content: new Symbol(parts[0]) }, production);
+    }
 
     // Parse body
     const body_symbols: Array<string> = parts[1].match(
       /[A-Z]'*|[^A-Z]+/g
     ) as Array<string>;
 
-    // Add body
-    this.Body = {
+    // Add new production
+    production.add({
       content: body_symbols.map((symbol) => new Symbol(symbol)),
-    };
-  }
-
-  /**
-   * @returns Production as a string.
-   */
-  public text = () =>
-    `${this.Header.content.text}->${this.Body.content
-      .map((symbol) => symbol.text)
-      .join("")}`;
-}
-
-class Grammar {
-  public Productions: Set<Production>;
-  public Terminals = new Set<Symbol>();
-  public NonTerminals = new Set<Symbol>();
-
-  // Data is content of the grammar text file
-  constructor(data: string) {
-    this.Productions = new Set(
-      // Map each line to a new production
-      data
-        .split("\n")
-        .filter((line) => line.trim() !== "")
-        .map((line) => new Production(line))
-    );
-
-    this.get_symbols();
-    this.eliminate_recursion();
+    });
   }
 
   /**
@@ -105,6 +112,9 @@ class Grammar {
    * Eliminate recursion on the productions.
    */
   private eliminate_recursion() {
+    // Expand expression
+
+    // Get rid of recursion
     this.NonTerminals.forEach((non_terminal: Symbol) => {
       let recursion: boolean = false;
       const old_productions: Set<Production> = new Set();
@@ -165,6 +175,9 @@ class Grammar {
 
       // 4_) Add epsilon production
       this.Productions.add(new Production(`${non_terminal.text}'->&`));
+
+      // Add new created symbol
+      this.NonTerminals.add(new Symbol(`${non_terminal.text}'`));
     });
   }
 
@@ -172,8 +185,14 @@ class Grammar {
    * Prints each production.
    */
   public print() {
-    this.Productions.forEach((production) => {
-      console.log(production.text());
+    this.Productions.forEach((bodies, header) => {
+      for (const body of bodies) {
+        console.log(
+          `${header.content.text}->${body.content
+            .map((symbol) => symbol.text)
+            .join("")}`
+        );
+      }
     });
   }
 }
