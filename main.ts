@@ -38,7 +38,7 @@ class Grammar {
       throw new Error("Wrong format on text file.");
     }
 
-    //this.get_symbols();
+    this.get_symbols();
     //this.eliminate_recursion();
   }
 
@@ -81,28 +81,18 @@ class Grammar {
    */
   private get_symbols() {
     const seen_terminals: Set<string> = new Set();
-    const seen_nonterminals: Set<string> = new Set();
-    let text: string;
 
-    this.Productions.forEach((production) => {
-      // Get non-terminals from headers
-      const header_content: Symbol = production.Header.content;
-      text = header_content.text;
+    this.Productions.forEach((bodies, header) => {
+      // Add non-terminals based on header
+      this.NonTerminals.add(header.content);
 
-      if (!seen_nonterminals.has(text)) {
-        seen_nonterminals.add(text);
-        this.NonTerminals.add(header_content);
-      }
-
-      // Get terminals from body
-      const body_content: Symbol[] = production.Body.content;
-
-      for (const symbol of body_content) {
-        text = symbol.text;
-
-        if (!seen_terminals.has(text) && symbol.type === "terminal") {
-          seen_terminals.add(text);
-          this.Terminals.add(symbol);
+      // Add terminals from the bodies of productions
+      for (const body of bodies) {
+        for (const symbol of body.content) {
+          if (!seen_terminals.has(symbol.text) && symbol.type === "terminal") {
+            seen_terminals.add(symbol.text);
+            this.Terminals.add(symbol);
+          }
         }
       }
     });
