@@ -39,7 +39,7 @@ class Grammar {
     }
 
     this.get_symbols();
-    this.eliminate_recursion();
+    this.remove_left_recursion();
   }
 
   /**
@@ -96,11 +96,63 @@ class Grammar {
   }
 
   /**
-   * Eliminate recursion on the productions.
+   * Remove all left recursion on the productions.
+   * This is based on the algorithm provided in https://en.m.wikipedia.org/wiki/Left_recursion
    */
-  private eliminate_recursion() {
-    // Get rid of direct recursions
+  private remove_left_recursion() {
+    const non_terminals = [...this.NonTerminals];
+
+    // Find index of non-terminals
+    function _index(symbol: string): number {
+      return non_terminals.findIndex(
+        (non_terminal) => non_terminal.text === symbol
+      );
+    }
+
+    const headers = [...this.Productions.keys()];
+    const productions = this.Productions;
+
+    // Find bodies given a string
+    function _body(symbol: string): Set<Body> {
+      const header = headers.find(
+        (header) => header.content.text === symbol
+      ) as Header;
+      return productions.get(header) as Set<Body>;
+    }
+
+    // For each terminal A_i:
     this.Productions.forEach((bodies, header) => {
+      // Repeat until an iteration leaves the grammar unchanged:
+      let changed = true;
+      while (changed) {
+        changed = false;
+        // For each production A_i -> body_i
+        bodies.forEach((body) => {
+          // If body_i begins with a non-terminal A_j and j < i
+          if (
+            body.content[0].type === "non-terminal" &&
+            _index(body.content[0].text) < _index(header.content.text)
+          ) {
+            // Let b_i be body_i without its leading A_j
+            const b_i: Symbol[] = body.content.slice(1);
+            // Remove the rule A_i -> body_i
+            this.Productions.get(header)?.delete(body);
+            // For each production with A_j -> body_j
+            // Add a new production A_i -> body_j b_i
+            const bodies_j: Set<Body> = _body(body.content[0].text);
+            bodies_j.forEach((body_j) => {
+              this.add(
+                `${header.content.text}->${body_j.content
+                  .map((symbol) => symbol.text)
+                  .join("")}${b_i.map((symbol) => symbol.text).join("")}`
+              );
+            });
+            changed = true;
+          }
+        });
+      }
+
+      // Remove direct left recursion for A_i
       let recursion: boolean = false;
       const old_productions: Set<Body> = new Set();
 
