@@ -39,7 +39,7 @@ class Grammar {
     }
 
     this.get_symbols();
-    //this.eliminate_recursion();
+    this.eliminate_recursion();
   }
 
   /**
@@ -47,33 +47,30 @@ class Grammar {
    * @param expression - String of the form A->aB.
    */
   private add(expression: string) {
-    // Split header and body
-    const parts: string[] = expression.split("->");
-    let production: Set<Body> | null = null;
+    // Split header and body texts
+    const [header_text, body_text] = expression
+      .split("->")
+      .map((part) => part.trim());
 
-    // Get production body if it already exists
-    for (const header of this.Productions.keys()) {
-      if (header.content.text === parts[0]) {
-        production = this.Productions.get(header) as Set<Body>;
-        break;
-      }
-    }
+    // Retrieve the production header
+    let production = [...this.Productions.keys()].find(
+      (header) => header.content.text === header_text
+    );
 
     // If there is no production on that header, create it
-    if (production === null) {
-      production = new Set<Body>();
-      this.Productions.set({ content: new Symbol(parts[0]) }, production);
+    if (!production) {
+      production = { content: new Symbol(header_text) };
+      this.Productions.set(production, new Set<Body>());
     }
 
     // Parse body
-    const body_symbols: Array<string> = parts[1].match(
-      /[A-Z]'*|[^A-Z]+/g
-    ) as Array<string>;
+    const body_symbols =
+      body_text
+        .match(/[A-Z]'*|[^A-Z]+/g)
+        ?.map((symbol) => new Symbol(symbol)) || [];
 
     // Add new production
-    production.add({
-      content: body_symbols.map((symbol) => new Symbol(symbol)),
-    });
+    this.Productions.get(production)?.add({ content: body_symbols });
   }
 
   /**
@@ -102,72 +99,63 @@ class Grammar {
    * Eliminate recursion on the productions.
    */
   private eliminate_recursion() {
-    // Expand expression
-
-    // Get rid of recursion
-    this.NonTerminals.forEach((non_terminal: Symbol) => {
+    // Get rid of direct recursions
+    this.Productions.forEach((bodies, header) => {
       let recursion: boolean = false;
-      const old_productions: Set<Production> = new Set();
+      const old_productions: Set<Body> = new Set();
 
       // 1_) Get alpha and beta for A -> Aalpha|beta
       const alpha: Set<Symbol[]> = new Set();
       const beta: Set<Symbol[]> = new Set();
 
-      this.Productions.forEach((production: Production) => {
-        if (non_terminal.text === production.Header.content.text) {
-          if (production.Body.content[0].text === non_terminal.text) {
-            // 1_a) alpha
-            alpha.add(production.Body.content.slice(1));
-            // Detect recursion
-            recursion = true;
-          } else {
-            // 1_b) beta
-            beta.add(production.Body.content.slice(0));
-          }
-          // Keep track of old recursive productions
-          old_productions.add(production);
+      bodies.forEach((body) => {
+        // Direct recursion
+        if (header.content.text === body.content[0].text) {
+          recursion = true;
+
+          // 1_a) alpha
+          alpha.add(body.content.slice(1));
+        } else {
+          // 1_b) beta
+          beta.add(body.content.slice(0));
         }
+        // Keep track of old recursive productions
+        old_productions.add(body);
       });
 
       if (!recursion) return;
 
       // 2_) Delete old productions
-      old_productions.forEach((production: Production) => {
-        this.Productions.delete(production);
+      old_productions.forEach((body: Body) => {
+        this.Productions.get(header)?.delete(body);
       });
 
-      // 3_) Create new productions!
+      // 3_) Create new productions
       // 3_b) beta
       if (beta.size === 0) {
-        this.Productions.add(
-          new Production(`${non_terminal.text}->${non_terminal.text}'`)
-        );
+        this.add(`${header.content.text}->${header.content.text}'`);
       }
       beta.forEach((_beta: Symbol[]) => {
-        this.Productions.add(
-          new Production(
-            `${non_terminal.text}->${_beta
-              .map((symbol) => symbol.text)
-              .join("")}${non_terminal.text}'`
-          )
+        this.add(
+          `${header.content.text}->${_beta
+            .map((symbol) => symbol.text)
+            .join("")}${header.content.text}'`
         );
       });
       // 3_a) alpha
       alpha.forEach((_alpha: Symbol[]) => {
-        this.Productions.add(
-          new Production(
-            `${non_terminal.text}'->${_alpha
-              .map((symbol) => symbol.text)
-              .join("")}${non_terminal.text}'`
-          )
+        this.add(
+          `${header.content.text}'->${_alpha
+            .map((symbol) => symbol.text)
+            .join("")}${header.content.text}'`
         );
       });
 
       // 4_) Add epsilon production
-      this.Productions.add(new Production(`${non_terminal.text}'->&`));
+      this.add(`${header.content.text}'->&`);
 
-      // Add new created symbol
-      this.NonTerminals.add(new Symbol(`${non_terminal.text}'`));
+      // Add new created symbol (A')
+      this.NonTerminals.add(new Symbol(`${header.content.text}'`));
     });
   }
 
