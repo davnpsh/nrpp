@@ -66,8 +66,13 @@ class Grammar {
     // Parse body
     const body_symbols =
       body_text
+        .replace(/&/g, "") // Remove all '&' characters
         .match(/[A-Z]'*|[^A-Z]+/g)
         ?.map((symbol) => new Symbol(symbol)) || [];
+
+    if (body_text === "&") {
+      body_symbols.push(new Symbol("&"));
+    }
 
     // Add new production
     this.Productions.get(production)?.add({ content: body_symbols });
