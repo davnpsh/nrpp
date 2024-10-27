@@ -40,13 +40,14 @@ class Grammar {
 
     this.get_symbols();
     this.remove_left_recursion();
+    this.factor_left();
   }
 
   /**
    * Add production.
    * @param expression - String of the form A->aB.
    */
-  private add(expression: string) {
+  private add(expression: string): void {
     // Split header and body texts
     const [header_text, body_text] = expression
       .split("->")
@@ -81,7 +82,7 @@ class Grammar {
   /**
    * Get terminal and non-terminal symbols
    */
-  private get_symbols() {
+  private get_symbols(): void {
     const seen_terminals: Set<string> = new Set();
 
     this.Productions.forEach((bodies, header) => {
@@ -104,7 +105,7 @@ class Grammar {
    * Remove all left recursion on the productions.
    * This is based on the algorithm provided in https://en.m.wikipedia.org/wiki/Left_recursion
    */
-  private remove_left_recursion() {
+  private remove_left_recursion(): void {
     const non_terminals = [...this.NonTerminals];
 
     // Find index of non-terminals
@@ -217,9 +218,124 @@ class Grammar {
   }
 
   /**
+   * Factor
+   */
+  private factor_left(): void {
+    const grammar_productions = this.Productions;
+
+    function _factor(bodies: string[]): [string | null, string[], string[]] {
+      const prefixMap: { [key: string]: string[] } = {};
+
+      // Find common prefix between 2 strings
+      const find_common_prefix = (str1: string, str2: string): string => {
+        let i = 0;
+        while (i < str1.length && i < str2.length && str1[i] === str2[i]) {
+          i++;
+        }
+        return str1.substring(0, i);
+      };
+
+      // Iterate through the bodies and group strings by their common prefixes
+      for (let i = 0; i < bodies.length; i++) {
+        for (let j = i + 1; j < bodies.length; j++) {
+          const prefix = find_common_prefix(bodies[i], bodies[j]);
+          if (prefix) {
+            if (!prefixMap[prefix]) {
+              prefixMap[prefix] = [];
+            }
+            if (!prefixMap[prefix].includes(bodies[i])) {
+              prefixMap[prefix].push(bodies[i]);
+            }
+            if (!prefixMap[prefix].includes(bodies[j])) {
+              prefixMap[prefix].push(bodies[j]);
+            }
+          }
+        }
+      }
+
+      // Find the first occurrence of matches
+      for (const key in prefixMap) {
+        if (prefixMap[key].length > 1) {
+          const common_prefix = key;
+          const factored_bodies = prefixMap[key].map((str) =>
+            str.substring(common_prefix.length)
+          );
+          const untouched_bodies = bodies.filter(
+            (str) => !prefixMap[key].includes(str)
+          );
+
+          return [common_prefix, factored_bodies, untouched_bodies];
+        }
+      }
+
+      // If no common prefix found
+      return [null, [], bodies];
+    }
+
+    function _new_symbol(old_header: Header): string {
+      let new_symbol = `${old_header.content.text}'`;
+      let already_exists;
+
+      while (true) {
+        already_exists = [...grammar_productions.keys()].find(
+          (header) => header.content.text === new_symbol
+        );
+
+        if (already_exists) {
+          new_symbol = `${new_symbol}'`;
+        } else {
+          return new_symbol;
+        }
+      }
+    }
+
+    this.Productions.forEach((bodies, header) => {
+      // Keep factoring until there is no more to factor
+      while (true) {
+        // Get bodies of the production of A as strings
+        const productions: string[] = [...bodies].map((body) =>
+          body.content.map((symbol) => symbol.text).join("")
+        );
+
+        // Factor
+        const factor_result = _factor(productions);
+
+        // Is there is nothing to factor, exit
+        if (factor_result[0] === null) break;
+
+        // Delete all productions of A
+        this.Productions.get(header)?.clear();
+
+        // Declare new symbol to use
+        // NOTE: This is because this program factors AFTER removing left recursion
+        const symbol = _new_symbol(header);
+
+        // Add new symbol to non-terminals
+        this.NonTerminals.add(new Symbol(symbol));
+
+        // Create productions:
+        // A -> prefix A'
+        this.add(`${header.content.text}->${factor_result[0]}${symbol}`);
+
+        // A -> non-factorizable parts
+        factor_result[2].forEach((body) => {
+          this.add(`${header.content.text}->${body}`);
+        });
+
+        // A' -> factorized parts
+        factor_result[1].forEach((body) => {
+          // Check empty strings
+          body = body === "" ? "&" : body;
+          this.add(`${symbol}->${body}`);
+        });
+      }
+    });
+  }
+
+  /**
    * Prints each production.
    */
-  public print() {
+  public print(): void {
     this.Productions.forEach((bodies, header) => {
       for (const body of bodies) {
         console.log(
