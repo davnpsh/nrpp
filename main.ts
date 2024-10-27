@@ -75,7 +75,16 @@ class Grammar {
       body_symbols.push(new Symbol("&"));
     }
 
-    // Add new production
+    // Check if it already exists
+    const already_exists = [...this.Productions.get(production)!].find(
+      (body) =>
+        body.content.map((symbol) => symbol.text).join("") ===
+        body_symbols.map((symbol) => symbol.text).join("")
+    );
+
+    if (already_exists) return;
+
+    // If not, add new production
     this.Productions.get(production)?.add({ content: body_symbols });
   }
 

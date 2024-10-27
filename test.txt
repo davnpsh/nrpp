@@ -1,4 +1,4 @@
-P->iEtP
-P->iEtPeP
-P->a
-E->b
+P->ab
+P->abc
+P->du
+P->due
