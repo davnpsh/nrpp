@@ -68,7 +68,7 @@ class Grammar {
     const body_symbols =
       body_text
         .replace(/&/g, "") // Remove all '&' characters
-        .match(/[A-Z]'*|[^A-Z]+/g)
+        .match(/[A-Z]'*|./g)
         ?.map((symbol) => new Symbol(symbol)) || [];
 
     if (body_text === "&") {
@@ -227,7 +227,7 @@ class Grammar {
   }
 
   /**
-   * Factor
+   * Apply left factoring
    */
   private factor_left(): void {
     const grammar_productions = this.Productions;
@@ -366,6 +366,7 @@ try {
 
   const grammar = new Grammar(data);
   grammar.print();
+  console.log(grammar.Productions)
 } catch (err) {
   console.error("Error reading the file:", err);
 }
