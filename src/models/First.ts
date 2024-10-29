@@ -38,7 +38,6 @@ export default class First {
    * @param grammar - Context Free Grammar
    */
   private generate(grammar: Grammar): void {
-
     //function _symbnol
 
     // Recursive function to find first given a production body
@@ -52,21 +51,30 @@ export default class First {
           return first;
         } else {
           // recursive case_) find a non-terminal and call the function again.
+          let rfirst: Set<string> = new Set(); // Recursive first on call
 
-          // Get non-terminal symbol
-          //grammar.Productions.get()
+          const bodies: Set<Body> = grammar.Productions.get(
+            symbol.text
+          ) as Set<Body>;
 
-          //first = new Set([...first, ..._first()])
+          for (const body of bodies) {
+            rfirst = new Set([...rfirst, ..._first(body)]);
+          }
+
+          first = new Set([...first, ...rfirst]);
+
+          // Recursive call could not be empty, return
+          if (!rfirst.has("&")) return first;
         }
       }
 
+      // All production symbols could be empty
       return first;
     }
 
     grammar.Productions.forEach((bodies, header) => {
       let first: Set<string> = new Set();
 
-      console.log(header);
       bodies.forEach((body) => {
         first = new Set([...first, ..._first(body)]);
       });
