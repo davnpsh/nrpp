@@ -38,19 +38,40 @@ export default class First {
    * @param grammar - Context Free Grammar
    */
   private generate(grammar: Grammar): void {
+
+    //function _symbnol
+
     // Recursive function to find first given a production body
     function _first(body: Body): Set<string> {
-      return new Set();
+      let first: Set<string> = new Set();
+
+      for (const symbol of body.content) {
+        if (symbol.type === "terminal") {
+          // base case_) find a terminal and return it.
+          first.add(symbol.text);
+          return first;
+        } else {
+          // recursive case_) find a non-terminal and call the function again.
+
+          // Get non-terminal symbol
+          //grammar.Productions.get()
+
+          //first = new Set([...first, ..._first()])
+        }
+      }
+
+      return first;
     }
 
     grammar.Productions.forEach((bodies, header) => {
       let first: Set<string> = new Set();
 
+      console.log(header);
       bodies.forEach((body) => {
         first = new Set([...first, ..._first(body)]);
       });
 
-      this.add(header.content.text, first);
+      this.add(header, first);
     });
   }
 

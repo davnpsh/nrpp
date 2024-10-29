@@ -1,8 +1,8 @@
-import { Body, Header } from "../types/index.ts";
+import { Body } from "../types/index.ts";
 import Symbol from "./Symbol.ts";
 
 export default class Grammar {
-  public Productions: Map<Header, Set<Body>> = new Map();
+  public Productions: Map<string, Set<Body>> = new Map();
   public Terminals: Set<Symbol> = new Set();
   public NonTerminals: Set<Symbol> = new Set();
 
@@ -36,37 +36,35 @@ export default class Grammar {
       .map((part) => part.trim());
 
     // Retrieve the production header
-    let production = [...this.Productions.keys()].find(
-      (header) => header.content.text === header_text,
-    );
+    const production = this.Productions.get(header_text);
 
     // If there is no production on that header, create it
     if (!production) {
-      production = { content: new Symbol(header_text) };
-      this.Productions.set(production, new Set<Body>());
+      this.Productions.set(header_text, new Set<Body>());
     }
 
     // Parse body
-    const body_symbols = body_text
-      .replace(/&/g, "") // Remove all '&' characters
-      .match(/[A-Z]'*|./g)
-      ?.map((symbol) => new Symbol(symbol)) || [];
+    const body_symbols =
+      body_text
+        .replace(/&/g, "") // Remove all '&' characters
+        .match(/[A-Z]'*|./g)
+        ?.map((symbol) => new Symbol(symbol)) || [];
 
     if (body_text === "&") {
       body_symbols.push(new Symbol("&"));
     }
 
     // Check if it already exists
-    const already_exists = [...this.Productions.get(production)!].find(
+    const already_exists = [...this.Productions.get(header_text)!].find(
       (body) =>
         body.content.map((symbol) => symbol.text).join("") ===
-          body_symbols.map((symbol) => symbol.text).join(""),
+        body_symbols.map((symbol) => symbol.text).join("")
     );
 
     if (already_exists) return;
 
     // If not, add new production
-    this.Productions.get(production)?.add({ content: body_symbols });
+    this.Productions.get(header_text)?.add({ content: body_symbols });
   }
 
   /**
@@ -77,7 +75,7 @@ export default class Grammar {
 
     this.Productions.forEach((bodies, header) => {
       // Add non-terminals based on header
-      this.NonTerminals.add(header.content);
+      this.NonTerminals.add(new Symbol(header));
 
       // Add terminals from the bodies of productions
       for (const body of bodies) {
@@ -101,19 +99,8 @@ export default class Grammar {
     // Find index of non-terminals
     function _index(symbol: string): number {
       return non_terminals.findIndex(
-        (non_terminal) => non_terminal.text === symbol,
+        (non_terminal) => non_terminal.text === symbol
       );
-    }
-
-    const headers = [...this.Productions.keys()];
-    const productions = this.Productions;
-
-    // Find bodies given a string
-    function _body(symbol: string): Set<Body> {
-      const header = headers.find(
-        (header) => header.content.text === symbol,
-      ) as Header;
-      return productions.get(header) as Set<Body>;
     }
 
     // For each terminal A_i:
@@ -127,7 +114,7 @@ export default class Grammar {
           // If body_i begins with a non-terminal A_j and j < i
           if (
             body.content[0].type === "non-terminal" &&
-            _index(body.content[0].text) < _index(header.content.text)
+            _index(body.content[0].text) < _index(header)
           ) {
             // Let b_i be body_i without its leading A_j
             const b_i: Symbol[] = body.content.slice(1);
@@ -135,14 +122,14 @@ export default class Grammar {
             this.Productions.get(header)?.delete(body);
             // For each production with A_j -> body_j
             // Add a new production A_i -> body_j b_i
-            const bodies_j: Set<Body> = _body(body.content[0].text);
+            const bodies_j: Set<Body> = this.Productions.get(
+              body.content[0].text
+            ) as Set<Body>;
             bodies_j.forEach((body_j) => {
               this.add(
-                `${header.content.text}->${
-                  body_j.content
-                    .map((symbol) => symbol.text)
-                    .join("")
-                }${b_i.map((symbol) => symbol.text).join("")}`,
+                `${header}->${body_j.content
+                  .map((symbol) => symbol.text)
+                  .join("")}${b_i.map((symbol) => symbol.text).join("")}`
               );
             });
             changed = true;
@@ -160,7 +147,7 @@ export default class Grammar {
 
       bodies.forEach((body) => {
         // Direct recursion
-        if (header.content.text === body.content[0].text) {
+        if (header === body.content[0].text) {
           recursion = true;
 
           // 1_a) alpha
@@ -183,33 +170,27 @@ export default class Grammar {
       // 3_) Create new productions
       // 3_b) beta
       if (beta.size === 0) {
-        this.add(`${header.content.text}->${header.content.text}'`);
+        this.add(`${header}->${header}'`);
       }
       beta.forEach((_beta: Symbol[]) => {
         this.add(
-          `${header.content.text}->${
-            _beta
-              .map((symbol) => symbol.text)
-              .join("")
-          }${header.content.text}'`,
+          `${header}->${_beta.map((symbol) => symbol.text).join("")}${header}'`
         );
       });
       // 3_a) alpha
       alpha.forEach((_alpha: Symbol[]) => {
         this.add(
-          `${header.content.text}'->${
-            _alpha
-              .map((symbol) => symbol.text)
-              .join("")
-          }${header.content.text}'`,
+          `${header}'->${_alpha
+            .map((symbol) => symbol.text)
+            .join("")}${header}'`
         );
       });
 
       // 4_) Add epsilon production
-      this.add(`${header.content.text}'->&`);
+      this.add(`${header}'->&`);
 
       // Add new created symbol (A')
-      this.NonTerminals.add(new Symbol(`${header.content.text}'`));
+      this.NonTerminals.add(new Symbol(`${header}'`));
     });
   }
 
@@ -257,7 +238,7 @@ export default class Grammar {
             str.substring(common_prefix.length)
           );
           const untouched_bodies = bodies.filter(
-            (str) => !prefixMap[key].includes(str),
+            (str) => !prefixMap[key].includes(str)
           );
 
           return [common_prefix, factored_bodies, untouched_bodies];
@@ -268,13 +249,13 @@ export default class Grammar {
       return [null, [], bodies];
     }
 
-    function _new_symbol(old_header: Header): string {
-      let new_symbol = `${old_header.content.text}'`;
+    function _new_symbol(old_header: string): string {
+      let new_symbol = `${old_header}'`;
       let already_exists;
 
       while (true) {
         already_exists = [...grammar_productions.keys()].find(
-          (header) => header.content.text === new_symbol,
+          (header) => header === new_symbol
         );
 
         if (already_exists) {
@@ -311,11 +292,11 @@ export default class Grammar {
 
         // Create productions:
         // A -> prefix A'
-        this.add(`${header.content.text}->${factor_result[0]}${symbol}`);
+        this.add(`${header}->${factor_result[0]}${symbol}`);
 
         // A -> non-factorizable parts
         factor_result[2].forEach((body) => {
-          this.add(`${header.content.text}->${body}`);
+          this.add(`${header}->${body}`);
         });
 
         // A' -> factorized parts
@@ -335,11 +316,7 @@ export default class Grammar {
     this.Productions.forEach((bodies, header) => {
       for (const body of bodies) {
         console.log(
-          `${header.content.text}->${
-            body.content
-              .map((symbol) => symbol.text)
-              .join("")
-          }`,
+          `${header}->${body.content.map((symbol) => symbol.text).join("")}`
         );
       }
     });

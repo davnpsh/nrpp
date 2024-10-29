@@ -12,7 +12,9 @@ Deno.test({
     const grammar = new Grammar(data);
     grammar.print();
 
-    const first = new First(grammar);
-    first.print();
+    console.log(grammar);
+
+    //const first = new First(grammar);
+    //first.print();
   },
 });
