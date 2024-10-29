@@ -1,14 +1,18 @@
 import Grammar from "../src/models/Grammar.ts";
+import First from "../src/models/First.ts";
 
-// -- GRAMMAR INPUT --
-const filePath = "test.txt";
+Deno.test({
+  name: "general",
+  async fn() {
+    const filePath = "test.txt";
 
-try {
-  // Read the file
-  const data = await Deno.readTextFile(filePath);
+    // Read the file
+    const data = await Deno.readTextFile(filePath);
 
-  const grammar = new Grammar(data);
-  grammar.print();
-} catch (err) {
-  console.error("Error reading the file:", err);
-}
+    const grammar = new Grammar(data);
+    grammar.print();
+
+    const first = new First(grammar);
+    first.print();
+  },
+});
