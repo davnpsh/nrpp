@@ -1,4 +1,3 @@
-import First from "./First.ts";
 import Grammar from "./Grammar.ts";
 import Symbol from "./Symbol.ts";
 import { _first } from "../lib/utils.ts";
@@ -6,9 +5,9 @@ import { _first } from "../lib/utils.ts";
 export default class Follow {
   private data: Map<string, Set<string>> = new Map();
 
-  constructor(grammar: Grammar, first: First) {
+  constructor(grammar: Grammar) {
     // Generate data
-    this.generate(grammar, first);
+    this.generate(grammar);
   }
 
   /**
@@ -40,7 +39,7 @@ export default class Follow {
    * @param grammar - Context Free Grammar
    * @param first - First of the non-terminal symbol
    */
-  private generate(grammar: Grammar, first: First): void {
+  private generate(grammar: Grammar): void {
     // Recursive function to find follow through all productions
     function _follow(non_terminal: string): Set<string> {
       let follow: Set<string> = new Set();

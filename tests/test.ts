@@ -16,7 +16,7 @@ Deno.test({
     const first = new First(grammar);
     first.print();
     
-    const follow = new Follow(grammar, first);
+    const follow = new Follow(grammar);
     follow.print();
   },
 });
