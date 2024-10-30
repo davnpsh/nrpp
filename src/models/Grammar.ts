@@ -44,11 +44,10 @@ export default class Grammar {
     }
 
     // Parse body
-    const body_symbols =
-      body_text
-        .replace(/&/g, "") // Remove all '&' characters
-        .match(/[A-Z]'*|./g)
-        ?.map((symbol) => new Symbol(symbol)) || [];
+    const body_symbols = body_text
+      .replace(/&/g, "") // Remove all '&' characters
+      .match(/[A-Z]'*|./g)
+      ?.map((symbol) => new Symbol(symbol)) || [];
 
     if (body_text === "&") {
       body_symbols.push(new Symbol("&"));
@@ -58,7 +57,7 @@ export default class Grammar {
     const already_exists = [...this.Productions.get(header_text)!].find(
       (body) =>
         body.content.map((symbol) => symbol.text).join("") ===
-        body_symbols.map((symbol) => symbol.text).join("")
+          body_symbols.map((symbol) => symbol.text).join(""),
     );
 
     if (already_exists) return;
@@ -94,19 +93,20 @@ export default class Grammar {
    * This is based on the algorithm provided in https://en.m.wikipedia.org/wiki/Left_recursion
    */
   private remove_left_recursion(): void {
-    const non_terminals = [...this.NonTerminals];
+    /* const non_terminals = [...this.NonTerminals];
 
     // Find index of non-terminals
     function _index(symbol: string): number {
       return non_terminals.findIndex(
         (non_terminal) => non_terminal.text === symbol
       );
-    }
+    } */
 
     // For each terminal A_i:
     this.Productions.forEach((bodies, header) => {
+      // COMMENTED: Convert indirect recursion to direct recursion
       // Repeat until an iteration leaves the grammar unchanged:
-      let changed = true;
+      /* let changed = true;
       while (changed) {
         changed = false;
         // For each production A_i -> body_i
@@ -135,11 +135,10 @@ export default class Grammar {
             changed = true;
           }
         });
-      }
+      } */
 
       // Remove direct left recursion for A_i
       let recursion: boolean = false;
-      const old_productions: Set<Body> = new Set();
 
       // 1_) Get alpha and beta for A -> Aalpha|beta
       const alpha: Set<Symbol[]> = new Set();
@@ -156,16 +155,12 @@ export default class Grammar {
           // 1_b) beta
           beta.add(body.content.slice(0));
         }
-        // Keep track of old recursive productions
-        old_productions.add(body);
       });
 
       if (!recursion) return;
 
       // 2_) Delete old productions
-      old_productions.forEach((body: Body) => {
-        this.Productions.get(header)?.delete(body);
-      });
+      this.Productions.get(header)?.clear();
 
       // 3_) Create new productions
       // 3_b) beta
@@ -174,15 +169,17 @@ export default class Grammar {
       }
       beta.forEach((_beta: Symbol[]) => {
         this.add(
-          `${header}->${_beta.map((symbol) => symbol.text).join("")}${header}'`
+          `${header}->${_beta.map((symbol) => symbol.text).join("")}${header}'`,
         );
       });
       // 3_a) alpha
       alpha.forEach((_alpha: Symbol[]) => {
         this.add(
-          `${header}'->${_alpha
-            .map((symbol) => symbol.text)
-            .join("")}${header}'`
+          `${header}'->${
+            _alpha
+              .map((symbol) => symbol.text)
+              .join("")
+          }${header}'`,
         );
       });
 
@@ -238,7 +235,7 @@ export default class Grammar {
             str.substring(common_prefix.length)
           );
           const untouched_bodies = bodies.filter(
-            (str) => !prefixMap[key].includes(str)
+            (str) => !prefixMap[key].includes(str),
           );
 
           return [common_prefix, factored_bodies, untouched_bodies];
@@ -255,7 +252,7 @@ export default class Grammar {
 
       while (true) {
         already_exists = [...grammar_productions.keys()].find(
-          (header) => header === new_symbol
+          (header) => header === new_symbol,
         );
 
         if (already_exists) {
@@ -316,7 +313,7 @@ export default class Grammar {
     this.Productions.forEach((bodies, header) => {
       for (const body of bodies) {
         console.log(
-          `${header}->${body.content.map((symbol) => symbol.text).join("")}`
+          `${header}->${body.content.map((symbol) => symbol.text).join("")}`,
         );
       }
     });

@@ -1,5 +1,5 @@
 import Grammar from "./Grammar.ts";
-import { Body } from "../types/index.ts";
+import { _first } from "../lib/utils.ts";
 
 export default class First {
   private data: Map<string, Set<string>> = new Map();
@@ -38,45 +38,12 @@ export default class First {
    * @param grammar - Context Free Grammar
    */
   private generate(grammar: Grammar): void {
-    //function _symbnol
-
-    // Recursive function to find first given a production body
-    function _first(body: Body): Set<string> {
-      let first: Set<string> = new Set();
-
-      for (const symbol of body.content) {
-        if (symbol.type === "terminal") {
-          // base case_) find a terminal and return it.
-          first.add(symbol.text);
-          return first;
-        } else {
-          // recursive case_) find a non-terminal and call the function again.
-          let rfirst: Set<string> = new Set(); // Recursive first on call
-
-          const bodies: Set<Body> = grammar.Productions.get(
-            symbol.text
-          ) as Set<Body>;
-
-          for (const body of bodies) {
-            rfirst = new Set([...rfirst, ..._first(body)]);
-          }
-
-          first = new Set([...first, ...rfirst]);
-
-          // Recursive call could not be empty, return
-          if (!rfirst.has("&")) return first;
-        }
-      }
-
-      // All production symbols could be empty
-      return first;
-    }
 
     grammar.Productions.forEach((bodies, header) => {
       let first: Set<string> = new Set();
 
       bodies.forEach((body) => {
-        first = new Set([...first, ..._first(body)]);
+        first = new Set([...first, ..._first(grammar, body)]);
       });
 
       this.add(header, first);
@@ -90,7 +57,7 @@ export default class First {
     // Format data
     const table_data = Array.from(this.data.entries()).map(([key, value]) => ({
       non_terminal: key,
-      prim: value,
+      first: value,
     }));
 
     console.table(table_data);
