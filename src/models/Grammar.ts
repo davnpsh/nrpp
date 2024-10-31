@@ -5,7 +5,7 @@ import { _new_symbol } from "../lib/utils.ts";
 
 export default class Grammar {
   public Productions: Map<string, Set<Body>> = new Map();
-  public Terminals: Set<Symbol> = new Set();
+  public Terminals: Set<string> = new Set();
   public NonTerminals: NTSet = new NTSet();
 
   // Data is content of the grammar text file
@@ -79,16 +79,13 @@ export default class Grammar {
    * Get terminal symbols
    */
   private get_terminal_symbols(): void {
-    const seen_terminals: Set<string> = new Set();
-
     // Go through productions in the order of non-terminals
     this.NonTerminals.forEach((non_terminal) => {
       // Get bodies
       this.Productions.get(non_terminal)?.forEach((body) => {
         for (const symbol of body.content) {
-          if (!seen_terminals.has(symbol.text) && symbol.type === "terminal") {
-            seen_terminals.add(symbol.text);
-            this.Terminals.add(symbol);
+          if (!this.Terminals.has(symbol.text) && symbol.type === "terminal" && symbol.text !== "&") {
+            this.Terminals.add(symbol.text);
           }
         }
       });
