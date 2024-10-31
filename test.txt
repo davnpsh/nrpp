@@ -1,6 +1,4 @@
-E->E+T
-E->T
-T->T*F
-T->F
-F->i
-F->(E)
+S->S,T
+S->T
+T->i
+T->i(S)

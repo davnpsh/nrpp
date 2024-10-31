@@ -2,6 +2,7 @@ import Grammar from "../src/models/Grammar.ts";
 import First from "../src/models/First.ts";
 import Follow from "../src/models/Follow.ts";
 import M from "../src/models/M.ts";
+import TDP from "../src/models/TDP.ts";
 
 Deno.test({
   name: "general",
@@ -22,5 +23,8 @@ Deno.test({
 
     const M_table = new M(grammar, follow);
     M_table.print();
+
+    const TDP_table = new TDP(M_table, grammar.NonTerminals.get(0) as string, "i,(i)");
+    TDP_table.print();
   },
 });
