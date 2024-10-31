@@ -38,15 +38,15 @@ export default class First {
    * @param grammar - Context Free Grammar
    */
   private generate(grammar: Grammar): void {
-
-    grammar.Productions.forEach((bodies, header) => {
+    // Respect order
+    grammar.NonTerminals.forEach((non_terminal) => {
       let first: Set<string> = new Set();
 
-      bodies.forEach((body) => {
+      grammar.Productions.get(non_terminal)?.forEach(body => {
         first = new Set([...first, ..._first(grammar, body)]);
-      });
+      })
 
-      this.add(header, first);
+      this.add(non_terminal, first);
     });
   }
 

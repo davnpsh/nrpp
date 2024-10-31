@@ -43,3 +43,21 @@ export function _first(grammar: Grammar, body: Body): Set<string> {
 
   return first;
 }
+
+/**
+ * Generate a new symbol based on the derived parent header
+ * @param grammar - Context Free Grammar.
+ * @param old_header - Derived parent header
+ * @returns New symbol
+ */
+export function _new_symbol(grammar: Grammar, old_header: string): string {
+  let new_symbol = `${old_header}'`;
+
+  while (true) {
+    if (grammar.NonTerminals.has(new_symbol)) {
+      new_symbol = `${new_symbol}'`;
+    } else {
+      return new_symbol;
+    }
+  }
+}

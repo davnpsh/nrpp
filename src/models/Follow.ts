@@ -92,14 +92,14 @@ export default class Follow {
     }
 
     // Initial non-terminal
-    const S: string = [...grammar.NonTerminals][0].text;
+    const S: string = grammar.NonTerminals.get(0) as string;
 
     // Add $ wildcard to S
     this.add(S, new Set("$"));
 
     // Get follow of each non terminal
     grammar.NonTerminals.forEach((non_terminal) => {
-      this.add(non_terminal.text, _follow(non_terminal.text));
+      this.add(non_terminal, _follow(non_terminal));
     });
   }
 

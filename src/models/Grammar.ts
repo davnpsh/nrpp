@@ -1,10 +1,12 @@
 import { Body } from "../types/index.ts";
 import Symbol from "./Symbol.ts";
+import NTSet from "./NTSet.ts";
+import { _new_symbol } from "../lib/utils.ts";
 
 export default class Grammar {
   public Productions: Map<string, Set<Body>> = new Map();
   public Terminals: Set<Symbol> = new Set();
-  public NonTerminals: Set<Symbol> = new Set();
+  public NonTerminals: NTSet = new NTSet();
 
   // Data is content of the grammar text file
   constructor(data: string) {
@@ -20,9 +22,12 @@ export default class Grammar {
       throw new Error("Wrong format on text file.");
     }
 
-    this.get_symbols();
     this.remove_left_recursion();
     this.factor_left();
+
+    // Get terminal symbols at the end, because order
+    // could change while removing recursion or factoring
+    this.get_terminal_symbols();
   }
 
   /**
@@ -43,11 +48,15 @@ export default class Grammar {
       this.Productions.set(header_text, new Set<Body>());
     }
 
+    // Add new symbol to non-terminals set
+    this.NonTerminals.add(header_text);
+
     // Parse body
-    const body_symbols = body_text
-      .replace(/&/g, "") // Remove all '&' characters
-      .match(/[A-Z]'*|./g)
-      ?.map((symbol) => new Symbol(symbol)) || [];
+    const body_symbols =
+      body_text
+        .replace(/&/g, "") // Remove all '&' characters
+        .match(/[A-Z]'*|./g)
+        ?.map((symbol) => new Symbol(symbol)) || [];
 
     if (body_text === "&") {
       body_symbols.push(new Symbol("&"));
@@ -57,7 +66,7 @@ export default class Grammar {
     const already_exists = [...this.Productions.get(header_text)!].find(
       (body) =>
         body.content.map((symbol) => symbol.text).join("") ===
-          body_symbols.map((symbol) => symbol.text).join(""),
+        body_symbols.map((symbol) => symbol.text).join("")
     );
 
     if (already_exists) return;
@@ -67,24 +76,22 @@ export default class Grammar {
   }
 
   /**
-   * Get terminal and non-terminal symbols
+   * Get terminal symbols
    */
-  private get_symbols(): void {
+  private get_terminal_symbols(): void {
     const seen_terminals: Set<string> = new Set();
 
-    this.Productions.forEach((bodies, header) => {
-      // Add non-terminals based on header
-      this.NonTerminals.add(new Symbol(header));
-
-      // Add terminals from the bodies of productions
-      for (const body of bodies) {
+    // Go through productions in the order of non-terminals
+    this.NonTerminals.forEach((non_terminal) => {
+      // Get bodies
+      this.Productions.get(non_terminal)?.forEach((body) => {
         for (const symbol of body.content) {
           if (!seen_terminals.has(symbol.text) && symbol.type === "terminal") {
             seen_terminals.add(symbol.text);
             this.Terminals.add(symbol);
           }
         }
-      }
+      });
     });
   }
 
@@ -93,50 +100,8 @@ export default class Grammar {
    * This is based on the algorithm provided in https://en.m.wikipedia.org/wiki/Left_recursion
    */
   private remove_left_recursion(): void {
-    /* const non_terminals = [...this.NonTerminals];
-
-    // Find index of non-terminals
-    function _index(symbol: string): number {
-      return non_terminals.findIndex(
-        (non_terminal) => non_terminal.text === symbol
-      );
-    } */
-
     // For each terminal A_i:
     this.Productions.forEach((bodies, header) => {
-      // COMMENTED: Convert indirect recursion to direct recursion
-      // Repeat until an iteration leaves the grammar unchanged:
-      /* let changed = true;
-      while (changed) {
-        changed = false;
-        // For each production A_i -> body_i
-        bodies.forEach((body) => {
-          // If body_i begins with a non-terminal A_j and j < i
-          if (
-            body.content[0].type === "non-terminal" &&
-            _index(body.content[0].text) < _index(header)
-          ) {
-            // Let b_i be body_i without its leading A_j
-            const b_i: Symbol[] = body.content.slice(1);
-            // Remove the rule A_i -> body_i
-            this.Productions.get(header)?.delete(body);
-            // For each production with A_j -> body_j
-            // Add a new production A_i -> body_j b_i
-            const bodies_j: Set<Body> = this.Productions.get(
-              body.content[0].text
-            ) as Set<Body>;
-            bodies_j.forEach((body_j) => {
-              this.add(
-                `${header}->${body_j.content
-                  .map((symbol) => symbol.text)
-                  .join("")}${b_i.map((symbol) => symbol.text).join("")}`
-              );
-            });
-            changed = true;
-          }
-        });
-      } */
-
       // Remove direct left recursion for A_i
       let recursion: boolean = false;
 
@@ -169,25 +134,20 @@ export default class Grammar {
       }
       beta.forEach((_beta: Symbol[]) => {
         this.add(
-          `${header}->${_beta.map((symbol) => symbol.text).join("")}${header}'`,
+          `${header}->${_beta.map((symbol) => symbol.text).join("")}${header}'`
         );
       });
       // 3_a) alpha
       alpha.forEach((_alpha: Symbol[]) => {
         this.add(
-          `${header}'->${
-            _alpha
-              .map((symbol) => symbol.text)
-              .join("")
-          }${header}'`,
+          `${header}'->${_alpha
+            .map((symbol) => symbol.text)
+            .join("")}${header}'`
         );
       });
 
       // 4_) Add epsilon production
       this.add(`${header}'->&`);
-
-      // Add new created symbol (A')
-      this.NonTerminals.add(new Symbol(`${header}'`));
     });
   }
 
@@ -195,8 +155,10 @@ export default class Grammar {
    * Apply left factoring
    */
   private factor_left(): void {
-    const grammar_productions = this.Productions;
-
+    /**
+     * @param bodies - Production bodies
+     * @returns [common_prefix, factored_bodies, untouched_bodies]
+     */
     function _factor(bodies: string[]): [string | null, string[], string[]] {
       const prefixMap: { [key: string]: string[] } = {};
 
@@ -235,7 +197,7 @@ export default class Grammar {
             str.substring(common_prefix.length)
           );
           const untouched_bodies = bodies.filter(
-            (str) => !prefixMap[key].includes(str),
+            (str) => !prefixMap[key].includes(str)
           );
 
           return [common_prefix, factored_bodies, untouched_bodies];
@@ -244,23 +206,6 @@ export default class Grammar {
 
       // If no common prefix found
       return [null, [], bodies];
-    }
-
-    function _new_symbol(old_header: string): string {
-      let new_symbol = `${old_header}'`;
-      let already_exists;
-
-      while (true) {
-        already_exists = [...grammar_productions.keys()].find(
-          (header) => header === new_symbol,
-        );
-
-        if (already_exists) {
-          new_symbol = `${new_symbol}'`;
-        } else {
-          return new_symbol;
-        }
-      }
     }
 
     this.Productions.forEach((bodies, header) => {
@@ -282,10 +227,7 @@ export default class Grammar {
 
         // Declare new symbol to use
         // NOTE: This is because this program factors AFTER removing left recursion
-        const symbol = _new_symbol(header);
-
-        // Add new symbol to non-terminals
-        this.NonTerminals.add(new Symbol(symbol));
+        const symbol = _new_symbol(this, header);
 
         // Create productions:
         // A -> prefix A'
@@ -310,12 +252,13 @@ export default class Grammar {
    * Prints each production.
    */
   public print(): void {
-    this.Productions.forEach((bodies, header) => {
-      for (const body of bodies) {
+    // Respect order
+    this.NonTerminals.forEach((non_terminal) => {
+      this.Productions.get(non_terminal)?.forEach(body => {
         console.log(
-          `${header}->${body.content.map((symbol) => symbol.text).join("")}`,
+          `${non_terminal}->${body.content.map((symbol) => symbol.text).join("")}`
         );
-      }
+      })
     });
   }
 }

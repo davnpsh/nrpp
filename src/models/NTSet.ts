@@ -3,8 +3,8 @@ export default class NTSet {
   private unique: Set<string> = new Set();
 
   /**
-   * Add non terminal to the set.
-   * @param element - Non terminal to add.
+   * Add non-terminal to the set.
+   * @param element - Non-terminal to add.
    */
   public add(element: string): void {
     // If the element lready exists, don't add it.
@@ -31,14 +31,14 @@ export default class NTSet {
 
   /**
    * @param index - Index of the element.
-   * @returns Non terminal.
+   * @returns Non-terminal.
    */
   public get(index: number): string | undefined {
     return this.order[index];
   }
 
   /**
-   * @returns All non terminals.
+   * @returns All non-terminals.
    */
   public getAll(): string[] {
     return [...this.order];
@@ -49,5 +49,17 @@ export default class NTSet {
    */
   public size(): number {
     return this.order.length;
+  }
+
+  /**
+   * @returns Element of the set if found.
+   */
+  public has(element: string): boolean {
+    return this.unique.has(element);
+  }
+
+  // Method to iterate over elements
+  forEach(callback: (element: string) => void): void {
+    this.order.forEach(callback);
   }
 }

@@ -1,7 +1,4 @@
-S->Ab
-S->B
-A->Aa
-A->c
-A->d
-B->a
-B->aB
+S->(L)
+S->a
+L->L,S
+L->S
