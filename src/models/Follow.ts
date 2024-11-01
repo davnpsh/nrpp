@@ -41,7 +41,13 @@ export default class Follow {
    */
   private generate(grammar: Grammar): void {
     // Recursive function to find follow through all productions
-    function _follow(non_terminal: string): Set<string> {
+    function _follow(
+      non_terminal: string,
+      stack: Set<string> = new Set()
+    ): Set<string> {
+      // Keep track of recursive calls
+      stack.add(non_terminal);
+
       let follow: Set<string> = new Set();
 
       // Go through all productions
@@ -56,8 +62,8 @@ export default class Follow {
               const beta = body.content.slice(i + 1);
 
               // A -> alphaB - Recursive base case
-              if (beta.length === 0 && non_terminal !== header) {
-                follow = new Set([...follow, ..._follow(header)]);
+              if (beta.length === 0 && !stack.has(header)) {
+                follow = new Set([...follow, ..._follow(header, stack)]);
 
                 // $ wildcard
                 if (header === S) {
@@ -74,8 +80,8 @@ export default class Follow {
                 ]);
 
                 // Recursive case
-                if (first.has("&") && non_terminal !== header) {
-                  follow = new Set([...follow, ..._follow(header)]);
+                if (first.has("&") && !stack.has(header)) {
+                  follow = new Set([...follow, ..._follow(header, stack)]);
 
                   // $ wildcard
                   if (header === S) {
