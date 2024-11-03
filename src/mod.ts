@@ -1,1 +1,3 @@
-export * from "./models/NRPP.ts";
+import NRPP from "./models/NRPP.ts";
+
+export { NRPP };

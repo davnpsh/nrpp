@@ -7,7 +7,7 @@ await build({
     deno: true,
   },
   package: {
-    name: "davnpsh@nrpp",
+    name: "@davnpsh/nrpp",
     version: Deno.args[0] ?? "1.0.0",
     description: "Non-Recursive Predictive Parser for demonstration",
     license: "GPL-3.0",

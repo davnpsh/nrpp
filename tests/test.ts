@@ -3,8 +3,9 @@ import First from "../src/models/First.ts";
 import Follow from "../src/models/Follow.ts";
 import M from "../src/models/M.ts";
 import TDP from "../src/models/TDP.ts";
+import { NRPP } from "../src/mod.ts";
 
-Deno.test({
+/* Deno.test({
   name: "general",
   async fn() {
     const filePath = "test.txt";
@@ -17,14 +18,25 @@ Deno.test({
 
     const first = new First(grammar);
     first.print();
-    
+
     const follow = new Follow(grammar);
     follow.print();
 
     const M_table = new M(grammar, follow);
     M_table.print();
 
-    const TDP_table = new TDP(M_table, grammar.NonTerminals.get(0) as string, "i(i,i)");
+    const TDP_table = new TDP(
+      M_table,
+      grammar.NonTerminals.get(0) as string,
+      "i(i,i)"
+    );
     TDP_table.print();
+  },
+}); */
+
+Deno.test({
+  name: "general2",
+  fn() {
+    console.log(new NRPP("e"));
   },
 });
