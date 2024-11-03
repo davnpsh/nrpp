@@ -1,4 +1,7 @@
-S->S,T
-S->T
-T->i
-T->i(S)
+E->A
+E->L
+A->n
+A->i
+L->(S)
+S->E,S
+S->E

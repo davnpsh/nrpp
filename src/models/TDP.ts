@@ -70,7 +70,8 @@ export default class TDP {
       this.data.push(row);
     } while (X.text !== "$");
 
-    if (X.text === "$") this.recognize = true;
+    // Check last row - 1 and verify condition
+    if (X.text === "$" && a === "$") this.recognize = true;
   }
 
   /**
