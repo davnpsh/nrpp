@@ -11,6 +11,13 @@ await build({
     version: Deno.args[0] ?? "1.0.0",
     description: "Non-Recursive Predictive Parser for demonstration",
     license: "GPL-3.0",
+    repository: {
+      type: "git",
+      url: "https://github.com/davnpsh/nrpp.git",
+    },
+    publishConfig: {
+      registry: "https://npm.pkg.github.com",
+    },
   },
   typeCheck: false,
   test: false,
