@@ -121,4 +121,14 @@ export default class Follow {
 
     console.table(table_data);
   }
+
+  /**
+   * Export to JSON format
+   */
+  public export(): { non_terminal: string; follow: string[] }[] {
+    return Array.from(this.data.entries()).map(([key, value]) => ({
+      non_terminal: key,
+      follow: Array.from(value),
+    }));
+  }
 }

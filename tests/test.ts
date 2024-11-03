@@ -24,7 +24,7 @@ Deno.test({
     const M_table = new M(grammar, follow);
     M_table.print();
 
-    const TDP_table = new TDP(M_table, grammar.NonTerminals.get(0) as string, "(i,(i,(n)),(i))");
+    const TDP_table = new TDP(M_table, grammar.NonTerminals.get(0) as string, "i(i,i)");
     TDP_table.print();
   },
 });

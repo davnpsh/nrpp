@@ -118,4 +118,42 @@ export default class M {
 
     console.table(table_data);
   }
+
+  /**
+   * Export to JSON format
+   */
+  public export(): Array<{ [key: string]: string }> {
+    const table_data: Array<{ [key: string]: string }> = [];
+
+    this.grammar.NonTerminals.forEach((non_terminal) => {
+      const row: { [key: string]: string } = { non_terminal: non_terminal };
+
+      this.grammar.Terminals.forEach((terminal) => {
+        const production: Body | undefined = this.get(non_terminal, terminal);
+
+        if (production) {
+          row[terminal] = `${non_terminal}->${production.content
+            .map((symbol) => symbol.text)
+            .join("")}`;
+        } else {
+          row[terminal] = "";
+        }
+      });
+
+      // Don't forget the $ wildcard
+      const production: Body | undefined = this.get(non_terminal, "$");
+
+      if (production) {
+        row["$"] = `${non_terminal}->${production.content
+          .map((symbol) => symbol.text)
+          .join("")}`;
+      } else {
+        row["$"] = "";
+      }
+
+      table_data.push(row);
+    });
+
+    return table_data;
+  }
 }

@@ -84,7 +84,11 @@ export default class Grammar {
       // Get bodies
       this.Productions.get(non_terminal)?.forEach((body) => {
         for (const symbol of body.content) {
-          if (!this.Terminals.has(symbol.text) && symbol.type === "terminal" && symbol.text !== "&") {
+          if (
+            !this.Terminals.has(symbol.text) &&
+            symbol.type === "terminal" &&
+            symbol.text !== "&"
+          ) {
             this.Terminals.add(symbol.text);
           }
         }
@@ -251,11 +255,31 @@ export default class Grammar {
   public print(): void {
     // Respect order
     this.NonTerminals.forEach((non_terminal) => {
-      this.Productions.get(non_terminal)?.forEach(body => {
+      this.Productions.get(non_terminal)?.forEach((body) => {
         console.log(
-          `${non_terminal}->${body.content.map((symbol) => symbol.text).join("")}`
+          `${non_terminal}->${body.content
+            .map((symbol) => symbol.text)
+            .join("")}`
         );
-      })
+      });
     });
+  }
+
+  /**
+   * Export to JSON format
+   */
+  public export(): { header: string; body: string }[] {
+    const productions: { header: string; body: string }[] = [];
+
+    this.NonTerminals.forEach((non_terminal) => {
+      this.Productions.get(non_terminal)?.forEach((body) => {
+        productions.push({
+          header: non_terminal,
+          body: body.content.map((symbol) => symbol.text).join(""),
+        });
+      });
+    });
+
+    return productions;
   }
 }

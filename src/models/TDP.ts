@@ -85,4 +85,21 @@ export default class TDP {
 
     console.table(table_data);
   }
+
+  /**
+   * Export to JSON format
+   */
+  public export(): {
+    stack: string;
+    in: string;
+    out: string | null;
+  }[] {
+    const table_data = this.data.map((entry) => ({
+      stack: entry.stack.map((symbol) => symbol.text).join(""),
+      in: entry.in,
+      out: entry.out,
+    }));
+
+    return table_data;
+  }
 }

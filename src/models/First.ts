@@ -42,9 +42,9 @@ export default class First {
     grammar.NonTerminals.forEach((non_terminal) => {
       let first: Set<string> = new Set();
 
-      grammar.Productions.get(non_terminal)?.forEach(body => {
+      grammar.Productions.get(non_terminal)?.forEach((body) => {
         first = new Set([...first, ..._first(grammar, body)]);
-      })
+      });
 
       this.add(non_terminal, first);
     });
@@ -61,5 +61,15 @@ export default class First {
     }));
 
     console.table(table_data);
+  }
+
+  /**
+   * Export to JSON format
+   */
+  public export(): { non_terminal: string; first: string[] }[] {
+    return Array.from(this.data.entries()).map(([key, value]) => ({
+      non_terminal: key,
+      first: Array.from(value),
+    }));
   }
 }
