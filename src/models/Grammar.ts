@@ -10,17 +10,13 @@ export default class Grammar {
 
   // Data is content of the grammar text file
   constructor(data: string) {
-    try {
-      data
-        // Split productions by lines
-        .split("\n")
-        // Filter empty lines
-        .filter((line) => line.trim() !== "")
-        // Add production
-        .map((line) => this.add(line));
-    } catch (_e) {
-      throw new Error("Wrong format on text file.");
-    }
+    data
+      // Split productions by lines
+      .split("\n")
+      // Filter empty lines
+      .filter((line) => line.trim() !== "")
+      // Add production
+      .map((line) => this.add(line));
 
     this.remove_left_recursion();
     this.factor_left();
@@ -40,8 +36,26 @@ export default class Grammar {
       .split("->")
       .map((part) => part.trim());
 
+    /* Validations */
+
+    // Empty productions
+    if (!header_text || !body_text)
+      throw new Error(`Invalid production: ${expression}`);
+
+    if (expression.includes("$"))
+      throw new Error("You cannot use $ on productions.");
+
     // Check if A->A (bad recursion)
-    if (header_text === body_text) throw new Error(`Invalid production: ${expression}`);
+    if (header_text === body_text)
+      throw new Error(`Invalid production: ${expression}`);
+
+    if (header_text.includes("&"))
+      throw new Error(`Invalid use of epsilon (&): ${expression}`);
+
+    if (body_text.includes("&") && body_text !== "&")
+      throw new Error(`Invalid use of epsilon (&): ${expression}`);
+
+    /* Add */
 
     // Retrieve the production header
     const production = this.Productions.get(header_text);
@@ -57,13 +71,13 @@ export default class Grammar {
     // Parse body
     const body_symbols =
       body_text
-        .replace(/&/g, "") // Remove all '&' characters
+        //.replace(/&/g, "") // Remove all '&' characters
         .match(/[A-Z]'*|./g)
         ?.map((symbol) => new Symbol(symbol)) || [];
 
-    if (body_text === "&") {
+    /* if (body_text === "&") {
       body_symbols.push(new Symbol("&"));
-    }
+    } */
 
     // Check if it already exists
     const already_exists = [...this.Productions.get(header_text)!].find(

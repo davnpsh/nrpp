@@ -17,6 +17,10 @@ export default class TDP {
    * @param w - Phrase
    */
   private generate(M: M, S: string, w: string) {
+    /* Validations */
+
+    if (w.includes("$") || w.includes("&")) throw new Error("You cannot use $ or & on the string.");
+
     // Insert initial elements on the table
     this.data.push({
       stack: [new Symbol("$"), new Symbol(S)],
