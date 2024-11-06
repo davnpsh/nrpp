@@ -27,7 +27,7 @@ Deno.test({
     const TDP_table = new TDP(
       M_table,
       grammar.NonTerminals.get(0) as string,
-      "(i,(i,(n)),(i))zzzzz"
+      "(i,(i,(n)),(i))"
     );
     TDP_table.print();
     console.log(TDP_table.recognize);

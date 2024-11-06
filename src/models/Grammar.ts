@@ -40,6 +40,9 @@ export default class Grammar {
       .split("->")
       .map((part) => part.trim());
 
+    // Check if A->A (bad recursion)
+    if (header_text === body_text) throw new Error(`Invalid production: ${expression}`);
+
     // Retrieve the production header
     const production = this.Productions.get(header_text);
 
