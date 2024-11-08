@@ -152,7 +152,10 @@ export default class Grammar {
       }
       beta.forEach((_beta: Symbol[]) => {
         this.add(
-          `${header}->${_beta.map((symbol) => symbol.text).join("")}${header}'`
+          `${header}->${_beta
+            // Omit epsilon & in beta
+            .map((symbol) => (symbol.text === "&" ? "" : symbol.text))
+            .join("")}${header}'`
         );
       });
       // 3_a) alpha
